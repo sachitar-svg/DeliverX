@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "name": "Ramesh",
+    "area": "Village Center",
+    "rating": 4.5,
+    "available": true
+  },
+  {
+    "id": 2,
+    "name": "Sita",
+    "area": "Near Temple",
+    "rating": 4.2,
+    "available": true
+  }
+]

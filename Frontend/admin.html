@@ -1,0 +1,324 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeliverX — Admin</title>
+  <link rel="stylesheet" href="/Frontend/styles.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-content">
+    <div class="navbar-brand"><span class="dot"></span> DeliverX Admin</div>
+    <div class="navbar-menu">
+      <span style="font-size:.85rem;color:var(--text2)">Admin Panel</span>
+      <button class="btn btn-secondary btn-sm" onclick="logout()">Sign out</button>
+    </div>
+  </nav>
+
+<div class="container">
+  <div class="grid grid-3" style="margin-bottom:var(--spacing-xl)">
+    <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value" id="statsTotal">0</div><div class="stat-label">Total Orders</div></div>
+    <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" id="statsDelivered">0</div><div class="stat-label">Delivered</div></div>
+    <div class="stat-card"><div class="stat-icon">🔄</div><div class="stat-value" id="statsInProgress">0</div><div class="stat-label">In Progress</div></div>
+  </div>
+
+  <!-- TAB NAVIGATION -->
+  <div class="tab-bar" style="margin-bottom: var(--spacing-md);">
+    <button class="tab-btn active" onclick="showTab('all-orders', this)">📋 All Orders</button>
+    <button class="tab-btn" onclick="showTab('ai-bundling', this)">📦 AI Bundling</button>
+  </div>
+
+  <!-- TAB 1: ORIGINAL ALL ORDERS VIEW -->
+  <div id="all-orders" class="tab-content">
+    <div class="card">
+      <div class="card-header">
+        <h2>All Orders</h2>
+        <div style="display:flex;gap:var(--spacing-sm);align-items:center;flex-wrap:wrap">
+          <select id="statusFilter" onchange="loadOrders()" style="padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg3);color:var(--text);font-size:.88rem">
+            <option value="">All statuses</option>
+            <option value="placed">Placed</option>
+            <option value="dispatched">Dispatched</option>
+            <option value="at_hub">At Hub</option>
+            <option value="out_for_delivery">Out for Delivery</option>
+            <option value="delivered">Delivered</option>
+            <option value="failed">Failed</option>
+          </select>
+          <input type="text" id="searchId" placeholder="Search Order ID" oninput="filterTable()"
+            style="padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg3);color:var(--text);font-size:.88rem;width:180px">
+          <button class="btn btn-secondary btn-sm" onclick="loadOrders()">Refresh</button>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto">
+        <table class="table" id="ordersTable">
+          <thead>
+            <tr><th>Order ID</th><th>Status</th><th>Mode</th><th>Distance</th><th>CO₂</th><th>Created</th><th></th></tr>
+          </thead>
+          <tbody id="ordersBody">
+            <tr><td colspan="7"><div class="loading"><div class="spinner"></div> Loading…</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: AI BUNDLING VIEW -->
+  <div id="ai-bundling" class="tab-content" style="display:none">
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-header">
+          <h2>Pending Dispatch</h2>
+          <button class="btn btn-secondary btn-sm" onclick="loadPendingForBundling()">🔄 Refresh</button>
+        </div>
+        <div id="pendingBundleList" style="max-height: 500px; overflow-y:auto;">
+          <div class="loading"><div class="spinner"></div> Loading…</div>
+        </div>
+        <div style="margin-top:var(--spacing-md); text-align:center;">
+          <button class="btn btn-primary btn-block" onclick="triggerBundlingAI()" id="aiBundleBtn">
+            🚀 Run Bundling AI
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Optimized Bundles</h2>
+        </div>
+        <div id="bundleResultsArea">
+          <div class="empty">
+            <div class="empty-icon">🤖</div>
+            <p>Run the AI to group nearby orders into bundles</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- Detail modal -->
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:400;align-items:center;justify-content:center;padding:var(--spacing-md)">
+  <div style="background:var(--card-bg);border-radius:var(--radius-xl);max-width:560px;width:100%;max-height:90vh;overflow-y:auto;padding:var(--spacing-xl);box-shadow:var(--shadow-lg)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--spacing-lg)">
+      <h2 style="margin:0">Order Detail</h2>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal()">Close</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div class="alerts-wrap" id="alerts"></div>
+
+<script src="/Frontend/config.js"></script>
+<script src="/Frontend/api.js"></script>
+<script>
+let allOrders = [];
+let pendingOrders = [];
+
+// ─── NAVIGATION ───
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(name).style.display = 'block';
+  btn.classList.add('active');
+  if (name === 'all-orders') loadOrders();
+  if (name === 'ai-bundling') loadPendingForBundling();
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await checkConn();
+  await loadOrders();
+});
+setInterval(loadOrders, 10000);
+
+function logout() { window.location.href = '/'; }
+
+// ─── ORIGINAL ALL ORDERS LOGIC ───
+async function loadOrders() {
+  try {
+    const f   = document.getElementById('statusFilter').value;
+    const res = await api.getAllOrders(f || null);
+    allOrders = res.orders || [];
+    renderTable(allOrders);
+    updateStats(allOrders);
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+function filterTable() {
+  const q = document.getElementById('searchId').value.toUpperCase();
+  renderTable(q ? allOrders.filter(o => o.order_id.includes(q)) : allOrders);
+}
+
+function renderTable(orders) {
+  const body = document.getElementById('ordersBody');
+  if (!orders.length) {
+    body.innerHTML = '<tr><td colspan="7"><div class="empty"><div class="empty-icon">📋</div><p>No orders found</p></div></td></tr>';
+    return;
+  }
+  body.innerHTML = orders.map(o => `
+    <tr>
+      <td><code style="color:var(--primary);font-size:.88rem">${o.order_id}</code></td>
+      <td>${statusBadge(o.status)}</td>
+      <td><span style="font-size:.82rem;color:var(--text2)">${o.mode||'—'}</span></td>
+      <td style="font-size:.88rem">${o.distance_km ? o.distance_km.toFixed(2)+' km' : '—'}</td>
+      <td style="font-size:.88rem">${o.carbon_kg  ? o.carbon_kg.toFixed(3)+' kg'  : '—'}</td>
+      <td style="font-size:.78rem;color:var(--text2)">${o.created_at ? o.created_at.substring(0,16) : '—'}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="viewOrder('${o.order_id}')">View</button></td>
+    </tr>
+  `).join('');
+}
+
+function updateStats(orders) {
+  document.getElementById('statsTotal').innerText      = orders.length;
+  document.getElementById('statsDelivered').innerText  = orders.filter(o => o.status === 'delivered').length;
+  document.getElementById('statsInProgress').innerText = orders.filter(o => !['delivered','failed'].includes(o.status)).length;
+}
+
+async function viewOrder(id) {
+  try {
+    const o = await api.getOrderStatus(id);
+    let html = `
+      <div class="info-row"><span class="label">Order ID</span><span class="value" style="color:var(--primary)">${o.order_id}</span></div>
+      <div class="info-row"><span class="label">Status</span><span class="value">${statusBadge(o.status)}</span></div>
+      <div class="info-row"><span class="label">Mode</span><span class="value">${o.mode||'—'}</span></div>
+      <div class="info-row"><span class="label">Distance</span><span class="value">${o.distance_km ? o.distance_km.toFixed(2)+' km' : '—'}</span></div>
+      <div class="info-row"><span class="label">CO₂</span><span class="value">${o.carbon_kg ? o.carbon_kg.toFixed(3)+' kg' : '—'}</span></div>
+      <div class="info-row"><span class="label">Created</span><span class="value">${o.created_at||'—'}</span></div>
+      <div style="margin-top:var(--spacing-lg);padding-top:var(--spacing-md);border-top:1px solid var(--border)">
+        <h3 style="margin-bottom:var(--spacing-sm)">Update Status</h3>
+        <div style="display:flex;gap:var(--spacing-sm);flex-wrap:wrap">
+          ${['dispatched','at_hub','out_for_delivery','delivered','failed'].map(s =>
+            `<button class="btn btn-secondary btn-sm" onclick="updateStatus('${id}','${s}')">${s.replace(/_/g,' ')}</button>`
+          ).join('')}
+        </div>
+      </div>
+    `;
+    document.getElementById('modalBody').innerHTML = html;
+    document.getElementById('modal').style.display = 'flex';
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+async function updateStatus(id, status) {
+  try {
+    await api.updateOrderStatus(id, status);
+    showAlert(`Status updated to ${status}`, 'success');
+    closeModal();
+    await loadOrders();
+  } catch(e) { showAlert('Error: ' + e.message, 'error'); }
+}
+
+function closeModal() { document.getElementById('modal').style.display = 'none'; }
+document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) closeModal(); });
+
+function statusBadge(s) {
+  const map = { placed:'badge-info', dispatched:'badge-info', at_hub:'badge-warning', out_for_delivery:'badge-warning', delivered:'badge-success', failed:'badge-danger' };
+  return `<span class="badge ${map[s]||'badge-info'}">${s.replace(/_/g,' ')}</span>`;
+}
+
+// ─── AI BUNDLING LOGIC ───
+async function loadPendingForBundling() {
+  const el = document.getElementById('pendingBundleList');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div> Loading…</div>';
+  try {
+    const res = await api.getAllOrders('placed');
+    pendingOrders = res.orders || [];
+    el.innerHTML = pendingOrders.map(o => `
+      <div class="card" style="margin-bottom:8px; padding:10px; display:flex; justify-content:space-between; align-items:center; background:var(--bg3)">
+        <div><code style="color:var(--primary)">${o.order_id}</code> <span class="badge badge-info">${o.mode}</span></div>
+        <div style="font-size:0.7rem; color:var(--text2)">${o.lat}, ${o.lon}</div>
+      </div>
+    `).join('') || '<p style="text-align:center">No orders pending</p>';
+  } catch(e) { el.innerHTML = 'Error loading orders'; }
+}
+
+async function triggerBundlingAI() {
+  if (pendingOrders.length === 0) { showAlert('No orders to bundle!', 'warning'); return; }
+  const btn = document.getElementById('aiBundleBtn');
+  btn.disabled = true; btn.innerHTML = 'Optimizing...';
+
+  try {
+    // Separate Hub and Direct orders
+    const hubOrders = pendingOrders.filter(o => o.mode === 'micro-hub');
+    const directOrders = pendingOrders.filter(o => o.mode !== 'micro-hub');
+    let finalBundles = [];
+
+    // 1. All micro-hub orders = One single bundle
+    if (hubOrders.length > 0) {
+      finalBundles.push(hubOrders.map(o => o.order_id));
+    }
+
+    // 2. Direct orders = Distance AI bundling
+    if (directOrders.length > 0) {
+      const payload = directOrders.map(o => ({ id: o.order_id, lat: parseFloat(o.lat), lon: parseFloat(o.lon) }));
+      const aiRes = await api.bundleOrders(payload);
+      finalBundles = [...finalBundles, ...aiRes.bundles];
+    }
+
+    renderBundles(finalBundles);
+    showAlert('AI Bundling Complete!', 'success');
+  } catch (e) {
+    showAlert('AI Error: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🚀 Run Bundling AI';
+  }
+}
+
+function renderBundles(bundles) {
+  const area = document.getElementById('bundleResultsArea');
+  area.innerHTML = bundles.map((bundle, index) => {
+    const isHubBundle = (index === 0 && bundles.length > 0 && pendingOrders.some(o => o.mode === 'micro-hub' && bundle.includes(o.order_id)));
+    return `
+      <div class="card" style="margin-bottom:var(--spacing-md); border-left: 4px solid ${isHubBundle ? 'var(--accent)' : 'var(--primary)'};">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <strong>${isHubBundle ? '📦 Hub Master Bundle' : 'Bundle #'+(index+1)}</strong>
+          <span class="badge badge-primary">${bundle.length} Order(s)</span>
+        </div>
+        <div style="padding:10px; display:flex; gap:5px; flex-wrap:wrap">
+          ${bundle.map(id => `<code class="badge badge-info" style="padding:3px 8px">${id}</code>`).join('')}
+        </div>
+        <div style="padding:10px; text-align:right">
+          <button class="btn btn-success btn-sm" onclick="assignBundleToAgent('${bundle.join(',')}')">Dispatch to Agent</button>
+        </div>
+      </div>
+    `;
+  }).join('') || '<p>No bundles formed</p>';
+}
+
+async function assignBundleToAgent(orderIdsString) {
+  const orderIds = orderIdsString.split(',');
+  try {
+    // Bulk update all orders in the bundle to 'dispatched'
+    await Promise.all(orderIds.map(id => api.updateOrderStatus(id, 'dispatched')));
+    showAlert(`Dispatched ${orderIds.length} orders!`, 'success');
+    loadPendingForBundling();
+    loadOrders();
+    document.getElementById('bundleResultsArea').innerHTML = '<div class="empty"><p>Orders Dispatched!</p></div>';
+  } catch (e) {
+    showAlert('Dispatch failed: ' + e.message, 'error');
+  }
+}
+
+function showAlert(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = 'alert alert-' + type;
+  el.innerHTML = msg;
+  document.getElementById('alerts').appendChild(el);
+  setTimeout(() => el.remove(), 5000);
+}
+
+function logout() { window.location.href = '/'; }
+
+async function checkConn() {
+  try { await api.healthCheck(); }
+  catch(e) { showAlert('Cannot connect to backend.', 'error'); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadOrders();
+});
+</script>
+</body>
+</html>
+```

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeliverX — Hub Manager</title>
+  <link rel="stylesheet" href="/Frontend/styles.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-content">
+    <div class="navbar-brand"><span class="dot"></span> DeliverX Hub</div>
+    <div class="navbar-menu">
+      <span id="hubStatusBar" style="font-size:.85rem;color:var(--text2)">Checking…</span>
+      <button class="btn btn-secondary btn-sm" onclick="logout()">Sign out</button>
+    </div>
+  </nav>
+
+<div class="container">
+
+  <!-- Stats Grid -->
+  <div class="grid grid-3" style="margin-bottom:var(--spacing-xl)">
+    <div class="stat-card">
+      <div class="stat-icon">📦</div>
+      <div class="stat-value" id="statsAtHub">0</div>
+      <div class="stat-label">Parcels at Hub</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">✅</div>
+      <div class="stat-value" id="statsCollected">0</div>
+      <div class="stat-label">Collected Today</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🕐</div>
+      <div class="stat-value" id="hubHoursVal" style="font-size:1rem;padding-top:8px">—</div>
+      <div class="stat-label" id="hubOpenLabel">Checking hours…</div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('step2',this)">Step 2 — Verify Agent</button>
+    <button class="tab-btn" onclick="showTab('step3',this)">Step 3 — Send OTP-2</button>
+    <button class="tab-btn" onclick="showTab('step4',this)">Step 4 — Customer Pickup</button>
+    <button class="tab-btn" onclick="showTab('parcels',this)">Parcels at Hub</button>
+    <button class="tab-btn" onclick="showTab('hub-info',this)">Hub Info</button>
+  </div>
+
+  <!-- TAB 1: STEP 2 — Verify Agent -->
+  <div id="step2" class="tab-content">
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-header"><h2>Verify Agent Handoff (OTP-1)</h2></div>
+        <div class="form-group">
+          <label>Order ID *</label>
+          <input type="text" id="agentOrderId" placeholder="e.g. A3F9B21C" style="font-family:var(--font-mono); text-transform:uppercase">
+        </div>
+        <div class="form-group">
+          <label>Agent OTP-1 *</label>
+          <input type="text" id="agentOtp" placeholder="Enter 4-digit OTP" maxlength="4" style="font-family:var(--font-mono); letter-spacing:.2em; font-size:1.2rem;">
+        </div>
+        <button class="btn btn-primary btn-block" onclick="handleVerifyAgent()" id="btnVerifyAgent">Verify Agent & Accept Parcel</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Instructions</h2></div>
+        <p style="color:var(--text2); font-size:.9rem; line-height:1.6;">
+          1. Agent shows <strong>OTP-1</strong> from their app.<br>
+          2. Enter Order ID and OTP here.<br>
+          3. On success, parcel status becomes <code style="color:var(--primary)">at_hub</code>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: STEP 3 — Send OTP-2 -->
+  <div id="step3" class="tab-content" style="display:none">
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-header"><h2>Generate Customer OTP (OTP-2)</h2></div>
+        <div class="form-group">
+          <label>Order ID *</label>
+          <input type="text" id="notifyOrderId" placeholder="e.g. A3F9B21C" style="font-family:var(--font-mono); text-transform:uppercase">
+        </div>
+        <div class="form-group">
+          <label>Customer Phone *</label>
+          <input type="tel" id="customerPhone" placeholder="10-digit mobile number">
+        </div>
+        <button class="btn btn-secondary btn-block" onclick="handleGenerateCustOtp()" id="btnGenCustOtp">Generate OTP-2 & Send SMS</button>
+        
+        <div id="custOtpResult" style="display:none; margin-top:var(--spacing-md); text-align:center; padding:15px; background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; border-radius:8px;">
+          <span style="font-size:0.9rem">Customer Pickup OTP:</span><br>
+          <span id="otp2Value" style="font-size:1.8rem; font-weight:bold; font-family:var(--font-mono);">----</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Important</h2></div>
+        <p style="color:var(--text2); font-size:.9rem;">
+          You can only send OTP-2 if the parcel status is <strong style="color:var(--primary)">at_hub</strong>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: STEP 4 — Customer Pickup -->
+  <div id="step4" class="tab-content" style="display:none">
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-header"><h2>Verify Customer Collection (OTP-2)</h2></div>
+        <div class="form-group">
+          <label>Order ID *</label>
+          <input type="text" id="collectOrderId" placeholder="e.g. A3F9B21C" style="font-family:var(--font-mono); text-transform:uppercase">
+        </div>
+        <div class="form-group">
+          <label>Customer OTP-2 *</label>
+          <input type="text" id="collectOtp" placeholder="Enter 4-digit OTP" maxlength="4" style="font-family:var(--font-mono); letter-spacing:.2em; font-size:1.2rem;">
+        </div>
+        <button class="btn btn-success btn-block" onclick="handleVerifyCustomer()" id="btnVerifyCust">Verify Customer & Handover Parcel</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Final Step</h2></div>
+        <p style="color:var(--text2); font-size:.9rem;">
+          Verify the <strong>OTP-2</strong> the customer received via SMS. Upon success, parcel is marked <strong style="color:var(--primary)">delivered</strong>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: Parcels at Hub -->
+  <div id="parcels" class="tab-content" style="display:none">
+    <div class="card">
+      <div class="card-header">
+        <h2>📦 Current Hub Inventory</h2>
+        <button class="btn btn-secondary btn-sm" onclick="loadHubParcels()">🔄 Refresh List</button>
+      </div>
+      <div id="parcelsList">
+        <div class="loading"><div class="spinner"></div> Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: Hub Info -->
+  <div id="hub-info", class="tab-content" style="display:none">
+    <div class="card">
+      <div class="card-header"><h2>Hub Details</h2></div>
+      <div id="hubDetailsContent" style="padding:var(--spacing-md); line-height:2; color:var(--text2);">
+        Loading hub information...
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="alerts-wrap" id="alerts"></div>
+
+<script src="/Frontend/config.js"></script>
+<script src="/Frontend/api.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    initHub();
+    await refreshHubStats();
+});
+
+function initHub() {
+    const hubId = session.hubId || config.UI.DEFAULT_HUB_ID;
+    document.getElementById('hubStatusBar').innerText = `Hub ID: ${hubId}`;
+}
+
+async function refreshHubStats() {
+    const hubId = session.hubId || config.UI.DEFAULT_HUB_ID;
+    try {
+        const hours = await api.getHubHours(hubId);
+        document.getElementById('hubHoursVal').innerText = `${hours.open_time} - ${hours.close_time}`;
+        document.getElementById('hubOpenLabel').innerText = hours.is_open_now ? "🟢 Hub is Open" : "🔴 Hub is Closed";
+        document.getElementById('hubStatusBar').innerText = `Hub ID: ${hubId} | ${hours.is_open_now ? 'Online' : 'Offline'}`;
+
+        const res = await api.getAllOrders();
+        const orders = res.orders || [];
+        const atHub = orders.filter(o => o.status === 'at_hub').length;
+        const collected = orders.filter(o => o.status === 'delivered').length;
+
+        document.getElementById('statsAtHub').innerText = atHub;
+        document.getElementById('statsCollected').innerText = collected;
+
+        document.getElementById('hubDetailsContent').innerHTML = `
+          <strong>Name:</strong> ${hours.name || 'N/A'}<br>
+          <strong>Operating Hours:</strong> ${hours.open_time} to ${hours.close_time}<br>
+          <strong>Current Status:</strong> ${hours.message}
+        `;
+    } catch (e) {
+        console.error("Stat refresh failed", e);
+    }
+}
+
+function showTab(name, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(name).style.display = 'block';
+    btn.classList.add('active');
+    if (name === 'parcels') loadHubParcels();
+}
+
+// Update handleVerifyAgent function
+async function handleVerifyAgent() {
+    const id = document.getElementById('agentOrderId').value.trim();
+    const otp = document.getElementById('agentOtp').value.trim();
+    const btn = document.getElementById('btnVerifyAgent');
+
+    if (!id || !otp) { showAlert('Order ID and OTP are required', 'warning'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Verifying...';
+
+    try {
+        // ✅ CHANGED: Call the bulk verification route
+        const res = await api.request('POST', '/hub/verify-bundle-otp', { 
+            order_id: id, 
+            otp: otp 
+        });
+        
+        if (res.success) {
+            showAlert(`✅ Bulk Success! All parcels are now at hub.`, 'success');
+            document.getElementById('agentOrderId').value = '';
+            document.getElementById('agentOtp').value = '';
+            await refreshHubStats();
+        } else {
+            throw new Error(res.message);
+        }
+    } catch (e) {
+        showAlert('Error: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Verify Agent & Accept Parcel';
+    }
+}
+
+async function handleGenerateCustOtp() {
+    const id = document.getElementById('notifyOrderId').value.trim();
+    const phone = document.getElementById('customerPhone').value.trim();
+    const btn = document.getElementById('btnGenCustOtp');
+
+    if (!id || !phone) { showAlert('Order ID and Phone are required', 'warning'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Generating...';
+
+    try {
+        const res = await api.generateHubCustomerOTP(id, phone);
+        document.getElementById('custOtpResult').style.display = 'block';
+        document.getElementById('otp2Value').innerText = res.otp;
+        showAlert(`✅ OTP-2 sent to ${phone}`, 'success');
+    } catch (e) {
+        showAlert('Error: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Generate OTP-2 & Send SMS';
+    }
+}
+
+async function handleVerifyCustomer() {
+    const id = document.getElementById('collectOrderId').value.trim();
+    const otp = document.getElementById('collectOtp').value.trim();
+    const hubId = session.hubId || config.UI.DEFAULT_HUB_ID;
+    const btn = document.getElementById('btnVerifyCust');
+
+    if (!id || !otp) { showAlert('Order ID and OTP are required', 'warning'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Verifying...';
+
+    try {
+        await api.verifyHubCustomerOTP(id, otp, hubId);
+        showAlert(`✅ Success! Order ${id} collected.`, 'success');
+        document.getElementById('collectOrderId').value = '';
+        document,getElementById('collectOtp').value = '';
+        await refreshHubStats();
+    } catch (e) {
+        showAlert('Error: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Verify Customer & Handover Parcel';
+    }
+}
+
+// ✅ UPDATED: Added Phone Number column to the inventory table
+async function loadHubParcels() {
+    const el = document.getElementById('parcelsList');
+    el.innerHTML = '<div class="loading"><div class="spinner"></div> Loading...</div>';
+    try {
+        const res = await api.getAllOrders('at_hub');
+        const orders = res.orders || [];
+        if (!orders.length) {
+            el.innerHTML = '<div class="empty"><p>No parcels currently at the hub.</p></div>';
+            return;
+        }
+        el.innerHTML = `
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer Phone</th>
+                        <th>Mode</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${orders.map(o => `
+                        <tr>
+                            <td><code style="color:var(--primary)">${o.order_id}</code></td>
+                            <td style="font-size:0.85rem">📱 ${o.customer_phone || 'No phone'}</td>
+                            <td>${o.mode}</td>
+                            <td><span class="badge badge-warning">${o.status}</span></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    } catch (e) {
+        el.innerHTML = `<div class="alert alert-error">Error loading parcels: ${e.message}</div>`;
+    }
+}
+
+function showAlert(msg, type = 'info') {
+    const el = document.createElement('div');
+    el.className = 'alert alert-' + type;
+    el.innerHTML = msg;
+    document.getElementById('alerts').appendChild(el);
+    setTimeout(() => el.remove(), 5000);
+}
+
+function logout() {
+    session.clear();
+    window.location.href = '/';
+}
+</script>
+</body>
+</html>

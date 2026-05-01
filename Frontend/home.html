@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeliverX — Smarter Logistics & Last-Mile Delivery Optimization</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    :root {
+      --transition-smooth: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* ─── HERO SECTION ─── */
+    .hero {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 25%, #7c3aed 50%, #2563eb 75%, #06b6d4 100%);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" stroke-width="0.5" opacity="0.08"/></pattern></defs><rect width="1200" height="600" fill="url(%23grid)"/></svg>');
+      opacity: 0.15;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      max-width: 800px;
+      padding: var(--spacing-xl);
+      animation: fadeInUp 0.8s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .hero h1 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      margin-bottom: var(--spacing-md);
+      letter-spacing: -1px;
+      line-height: 1.1;
+      color: #ffffff;
+      text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .hero p {
+      font-size: 1.3rem;
+      margin-bottom: var(--spacing-xl);
+      color: #e0e7ff;
+      line-height: 1.6;
+      text-shadow: 0 1px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: var(--spacing-md);
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .hero-buttons .btn {
+      padding: 14px 32px;
+      font-size: 1rem;
+      min-width: 200px;
+      font-weight: 600;
+    }
+
+    .btn-primary-light {
+      background: #ffffff;
+      color: #1e3a8a;
+      border: none;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-primary-light:hover {
+      background: #f0f4ff;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .btn-outline-light {
+      background: transparent;
+      color: #ffffff;
+      border: 2px solid #ffffff;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-outline-light:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    /* ─── FEATURES SECTION ─── */
+    .features {
+      padding: var(--spacing-2xl) var(--spacing-xl);
+      background: var(--bg);
+    }
+
+    .section-title {
+      text-align: center;
+      margin-bottom: var(--spacing-2xl);
+    }
+
+    .section-title h2 {
+      font-size: 2.5rem;
+      margin-bottom: var(--spacing-md);
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      color: var(--primary);
+    }
+
+    .section-title p {
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto;
+      color: var(--text2);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: var(--spacing-xl);
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .feature-card {
+      background: var(--card-bg);
+      padding: var(--spacing-lg);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      text-align: center;
+      transition: var(--transition-smooth);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--primary);
+    }
+
+    .feature-card:hover::before {
+      opacity: 1;
+    }
+
+    .feature-icon {
+      font-size: 3rem;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .feature-card h3 {
+      margin-bottom: var(--spacing-sm);
+      color: var(--text);
+    }
+
+    .feature-card p {
+      font-size: 0.95rem;
+      color: var(--text2);
+    }
+
+    /* ─── HOW IT WORKS ─── */
+    .how-it-works {
+      padding: var(--spacing-2xl) var(--spacing-xl);
+      background: var(--bg2);
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: var(--spacing-xl);
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .step-card {
+      position: relative;
+      padding: var(--spacing-lg);
+      text-align: center;
+    }
+
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: white;
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .step-card h3 {
+      margin-bottom: var(--spacing-sm);
+      color: var(--text);
+    }
+
+    .step-card p {
+      font-size: 0.95rem;
+      color: var(--text2);
+    }
+
+    /* ─── ROLES SECTION ─── */
+    .roles {
+      padding: var(--spacing-2xl) var(--spacing-xl);
+      background: var(--bg);
+    }
+
+    .roles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: var(--spacing-lg);
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .role-card {
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-lg);
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      position: relative;
+    }
+
+    .role-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .role-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .role-card:hover::before {
+      opacity: 1;
+    }
+
+    .role-emoji {
+      font-size: 3.5rem;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .role-card h3 {
+      margin-bottom: var(--spacing-sm);
+      color: var(--text);
+    }
+
+    .role-card ul {
+      text-align: left;
+      list-style: none;
+      padding: 0;
+      margin: var(--spacing-md) 0;
+      font-size: 0.9rem;
+      color: var(--text2);
+    }
+
+    .role-card ul li {
+      padding: 6px 0;
+      padding-left: 24px;
+      position: relative;
+    }
+
+    .role-card ul li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--success);
+      font-weight: bold;
+    }
+
+    .role-card .btn {
+      width: 100%;
+      margin-top: var(--spacing-md);
+    }
+
+    /* ─── STATS SECTION ─── */
+    .stats {
+      padding: var(--spacing-2xl) var(--spacing-xl);
+      background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+      color: #ffffff;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--spacing-xl);
+      max-width: 1200px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .stat-item {
+      animation: slideInUp 0.6s ease-out;
+    }
+
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .stat-number {
+      font-size: 3rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: var(--spacing-sm);
+      color: #ffffff;
+    }
+
+    .stat-label {
+      font-size: 1rem;
+      opacity: 0.95;
+      color: #e0e7ff;
+    }
+
+    /* ─── CTA SECTION ─── */
+    .cta-section {
+      padding: var(--spacing-2xl) var(--spacing-xl);
+      background: var(--bg2);
+      text-align: center;
+    }
+
+    .cta-content {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .cta-content h2 {
+      font-size: 2rem;
+      margin-bottom: var(--spacing-md);
+      color: var(--text);
+    }
+
+    .cta-content p {
+      font-size: 1.1rem;
+      margin-bottom: var(--spacing-lg);
+      color: var(--text2);
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: var(--spacing-md);
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* ─── FOOTER ─── */
+    .footer {
+      background: var(--card-bg);
+      border-top: 1px solid var(--border);
+      padding: var(--spacing-xl);
+    }
+
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--spacing-lg);
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .footer-col h4 {
+      font-weight: 600;
+      margin-bottom: var(--spacing-md);
+      color: var(--text);
+    }
+
+    .footer-col ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .footer-col ul li {
+      margin-bottom: 8px;
+    }
+
+    .footer-col ul li a {
+      color: var(--text2);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s ease;
+    }
+
+    .footer-col ul li a:hover {
+      color: var(--primary);
+    }
+
+    .footer-bottom {
+      text-align: center;
+      padding-top: var(--spacing-lg);
+      border-top: 1px solid var(--border);
+      color: var(--text2);
+      font-size: 0.9rem;
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 2rem;
+      }
+
+      .hero p {
+        font-size: 1rem;
+      }
+
+      .section-title h2 {
+        font-size: 1.8rem;
+      }
+
+      .hero-buttons {
+        flex-direction: column;
+      }
+
+      .hero-buttons .btn {
+        min-width: 100%;
+      }
+
+      .cta-buttons {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HERO SECTION -->
+<section class="hero">
+  <div class="hero-content">
+    <h1>📦 DeliverX</h1>
+    <p>Smarter Logistics & Last-Mile Delivery Optimization</p>
+    <p style="font-size: 1rem; opacity: 0.95; margin-bottom: var(--spacing-lg); color: #e0e7ff;">
+      Real-time tracking, AI-powered route optimization, and carbon-neutral delivery
+    </p>
+    <div class="hero-buttons">
+      <!-- ✅ CHANGED: Now goes to Login page -->
+      <button class="btn btn-primary-light" onclick="window.location.href='/login'">
+        🔐 Sign In / Get Started
+      </button>
+      <button class="btn btn-outline-light" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})">
+        Learn More
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES SECTION -->
+<section class="features" id="features">
+  <div class="container">
+    <div class="section-title">
+      <h2>Why Choose DeliverX?</h2>
+      <p>Advanced features designed for modern logistics</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>Real-Time Tracking</h3>
+        <p>Track your orders in real-time with live GPS updates and instant notifications</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🗺️</div>
+        <h3>AI Route Optimization</h3>
+        <p>Machine learning algorithms optimize delivery routes to save time and fuel</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">♻️</div>
+        <h3>Carbon Tracking</h3>
+        <p>Monitor and reduce carbon footprint with eco-friendly delivery insights</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <h3>Smart Hub Allocation</h3>
+        <p>Automatic allocation to nearest hub for faster and more efficient deliveries</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <h3>Mobile First</h3>
+        <p>Optimized experience for customers and agents on the go</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🔐</div>
+        <h3>Secure & Reliable</h3>
+        <p>Military-grade encryption and OTP verification for safe deliveries</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-it-works">
+  <div class="container">
+    <div class="section-title">
+      <h2>How It Works</h2>
+      <p>Simple and efficient delivery process from order to doorstep</p>
+    </div>
+
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-number">1</div>
+        <h3>Sign In</h3>
+        <p>Choose your role and sign in to access your dashboard</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">2</div>
+        <h3>Place Order</h3>
+        <p>Customer places order with delivery mode preference</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">3</div>
+        <h3>Smart Allocation</h3>
+        <p>Order automatically assigned to nearest hub and available agent</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">4</div>
+        <h3>Route Optimization</h3>
+        <p>Agent receives optimized route with multiple deliveries</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">5</div>
+        <h3>Secure Handoff</h3>
+        <p>Two-factor OTP verification at hub and delivery point</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">6</div>
+        <h3>Delivery Complete</h3>
+        <p>Proof of delivery with GPS and photo captured automatically</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROLES SECTION -->
+<section class="roles">
+  <div class="container">
+    <div class="section-title">
+      <h2>Choose Your Role</h2>
+      <p>Sign in to access your personalized dashboard</p>
+    </div>
+
+    <div class="roles-grid">
+      <!-- CUSTOMER ROLE -->
+      <div class="role-card">
+        <div class="role-emoji">👤</div>
+        <h3>Customer</h3>
+        <ul>
+          <li>Place orders easily</li>
+          <li>Track in real-time</li>
+          <li>Multiple delivery modes</li>
+          <li>Secure verification</li>
+          <li>Carbon tracking</li>
+        </ul>
+        <!-- ✅ CHANGED: Now goes to Login page -->
+        <button class="btn btn-primary" onclick="window.location.href='/login'">
+          Sign In as Customer
+        </button>
+      </div>
+
+      <!-- AGENT ROLE -->
+      <div class="role-card">
+        <div class="role-emoji">🚚</div>
+        <h3>Delivery Agent</h3>
+        <ul>
+          <li>Optimized routes</li>
+          <li>Real-time orders</li>
+          <li>Navigation support</li>
+          <li>Earnings tracking</li>
+          <li>Performance stats</li>
+        </ul>
+        <!-- ✅ CHANGED: Now goes to Login page -->
+        <button class="btn btn-primary" onclick="window.location.href='/login'">
+          Sign In as Agent
+        </button>
+      </div>
+
+      <!-- HUB ROLE -->
+      <div class="role-card">
+        <div class="role-emoji">📦</div>
+        <h3>Hub Manager</h3>
+        <ul>
+          <li>Manage parcels</li>
+          <li>Handoff process</li>
+          <li>Customer verification</li>
+          <li>Hub statistics</li>
+          <li>Inventory control</li>
+        </ul>
+        <!-- ✅ CHANGED: Now goes to Login page -->
+        <button class="btn btn-primary" onclick="window.location.href='/login'">
+          Sign In as Hub
+        </button>
+      </div>
+
+      <!-- ADMIN ROLE -->
+      <div class="role-card">
+        <div class="role-emoji">⚙️</div>
+        <h3>Administrator</h3>
+        <ul>
+          <li>System overview</li>
+          <li>Order management</li>
+          <li>Agent monitoring</li>
+          <li>Analytics & reports</li>
+          <li>System settings</li>
+        </ul>
+        <!-- ✅ CHANGED: Now goes to Login page -->
+        <button class="btn btn-primary" onclick="window.location.href='/login'">
+          Sign In as Admin
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS SECTION -->
+<section class="stats">
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-number">10K+</div>
+        <div class="stat-label">Orders Delivered</div>
+      </div>
+      <div class="stat-item" style="animation-delay: 0.1s">
+        <div class="stat-number">2K+</div>
+        <div class="stat-label">Active Agents</div>
+      </div>
+      <div class="stat-item" style="animation-delay: 0.2s">
+        <div class="stat-number">50+</div>
+        <div class="stat-label">Local Hubs</div>
+      </div>
+      <div class="stat-item" style="animation-delay: 0.3s">
+        <div class="stat-number">99.2%</div>
+        <div class="stat-label">On-Time Rate</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA SECTION -->
+<section class="cta-section">
+  <div class="cta-content">
+    <h2>Ready to Optimize Your Deliveries?</h2>
+    <p>Join thousands of businesses and customers already using DeliverX</p>
+    <div class="cta-buttons">
+      <button class="btn btn-primary" onclick="window.location.href='/login'">
+        Get Started Free
+      </button>
+      <button class="btn btn-secondary" onclick="alert('Demo request coming soon!')">
+        Request Demo
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-col">
+      <h4>📦 DeliverX</h4>
+      <ul>
+        <li><a href="#about">About Us</a></li>
+        <li><a href="#careers">Careers</a></li>
+        <li><a href="#blog">Blog</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4>Product</h4>
+      <ul>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#security">Security</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="#contact">Contact</a></li>
+        <li><a href="#terms">Terms</a></li>
+        <li><a href="#privacy">Privacy</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4>Support</h4>
+      <ul>
+        <li><a href="#help">Help Center</a></li>
+        <li><a href="#status">Status Page</a></li>
+        <li><a href="#feedback">Send Feedback</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2024 DeliverX. All rights reserved. | Made with ❤️ for smarter logistics</p>
+  </div>
+</footer>
+
+<script src="/config.js"></script>
+</body>
+</html>

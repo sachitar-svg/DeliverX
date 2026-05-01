@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeliverX — Customer</title>
+  <link rel="stylesheet" href="/Frontend/styles.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-content">
+    <div class="navbar-brand"><span class="dot"></span> DeliverX</div>
+    <div class="navbar-menu">
+      <span id="userGreeting" style="font-size:.85rem;color:var(--text2)"></span>
+      <button class="btn btn-secondary btn-sm" onclick="logout()">Sign out</button>
+    </div>
+  </nav>
+
+<div class="container">
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('place-order',this)">Place Order</button>
+    <button class="tab-btn" onclick="showTab('my-orders',this)">My Orders</button>
+    <button class="tab-btn" onclick="showTab('track-order',this)">Track Order</button>
+  </div>
+
+  <!-- TAB 1: Place Order -->
+  <div id="place-order" class="tab-content">
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-header"><h2>New Delivery</h2></div>
+        <form id="orderForm" onsubmit="placeOrder(event)">
+          <div class="form-group">
+            <label>Pickup address *</label>
+            <input type="text" id="startAddress" value="DeliverX Central Warehouse, Whitefield, Bangalore" readonly style="background: var(--bg3); cursor: not-allowed;">
+          </div>
+          <div class="form-group">
+            <label>Delivery address *</label>
+            <input type="text" id="endAddress" placeholder="e.g. Koramangala, Bangalore" required>
+            <!-- ✅ ADDED: warning shown when address not found -->
+            <div class="form-help" id="addressHelp" style="display:none;color:var(--danger)">
+              ⚠️ Address not found. Please check spelling (e.g. "Koramangala, Bangalore")
+            </div>
+          </div>
+          <div class="grid grid-2" style="gap:var(--spacing-md)">
+            <div class="form-group">
+              <label>Area type *</label>
+              <select id="areaType" required>
+                <option value="">Select</option>
+                <option value="urban">Urban</option>
+                <option value="rural">Rural</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Connectivity *</label>
+              <select id="connectivity" required>
+                <option value="">Select</option>
+                <option value="high">High signal</option>
+                <option value="low">Low signal</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-2" style="gap:var(--spacing-md)">
+            <div class="form-group">
+              <label>Location type</label>
+              <select id="locationType">
+                <option value="home">Home</option>
+                <option value="office">Office</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Delivery hour (0–23) *</label>
+              <input type="number" id="deliveryTime" min="0" max="23" placeholder="e.g. 14" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Phone Number *</label>
+            <input type="tel" id="customerPhone" placeholder="Enter 10-digit mobile number" required>
+          </div>
+          <div class="form-group" style="display:flex;align-items:center;gap:10px">
+            <input type="checkbox" id="addressClear" style="width:auto">
+            <label for="addressClear" style="margin:0;font-weight:400">Address is clear and easy to find</label>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" id="placeBtn">Place Order</button>
+        </form>
+      </div>
+
+      <div id="routeInfo" style="display:none">
+        <div class="card" style="margin-bottom:var(--spacing-md)">
+          <div class="card-header"><h2>Route Details</h2></div>
+          <div class="info-row"><span class="label">Distance</span><span class="value" id="routeDistance">—</span></div>
+          <div class="info-row"><span class="label">Est. time</span><span class="value" id="routeTime">—</span></div>
+          <div class="info-row"><span class="label">Traffic</span><span class="value" id="routeTraffic">—</span></div>
+          <div class="info-row"><span class="label">Weather</span><span class="value" id="routeWeather">—</span></div>
+          <div class="info-row"><span class="label">CO₂</span><span class="value" id="routeCarbon">—</span></div>
+        </div>
+        <div class="card" id="orderResultCard" style="display:none">
+          <div class="card-header"><h2>Order Placed</h2></div>
+          <div class="info-row"><span class="label">Order ID</span><code class="value" id="placedOrderId" style="color:var(--primary)">—</code></div>
+          <div class="info-row"><span class="label">Delivery mode</span><span class="value" id="deliveryMode">—</span></div>
+          <div class="info-row"><span class="label">Failure risk</span><span class="value" id="failureRisk">—</span></div>
+
+          <div class="info-row" style="background: var(--bg3); padding: 10px; border-radius: var(--radius-md); margin: 10px 0;">
+              <span class="label" style="font-weight:bold">Total Delivery Fee</span>
+              <span class="value" id="totalPrice" style="font-weight:bold; color:var(--primary); font-size:1.2rem;">₹0.00</span>
+          </div>
+
+          <div class="info-row" id="hubRow" style="display:none"><span class="label">Assigned hub</span><span class="value" id="assignedHub">—</span></div>
+          <div style="margin-top:var(--spacing-md)">
+            <p style="font-size:.85rem;color:var(--text2);margin-bottom:var(--spacing-sm)">Select a delivery time slot:</p>
+            <div id="slotButtons" class="btn-group"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: My Orders -->
+  <div id="my-orders" class="tab-content" style="display:none">
+    <div class="card">
+      <div class="card-header">
+        <h2>My Orders</h2>
+        <button class="btn btn-secondary btn-sm" onclick="loadMyOrders()">Refresh</button>
+      </div>
+      <div id="myOrdersList"><div class="loading"><div class="spinner"></div> Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- TAB 3: Track Order -->
+  <div id="track-order" class="tab-content" style="display:none">
+    <div class="card">
+      <div class="card-header"><h2>Track Your Order</h2></div>
+      <div class="form-group" style="display:flex;gap:var(--spacing-md);align-items:flex-end;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <label>Order ID</label>
+          <input type="text" id="trackOrderId" placeholder="e.g. A3F9B21C" style="font-family:var(--font-mono);text-transform:uppercase">
+        </div>
+        <button class="btn btn-primary" onclick="trackOrder()">Track</button>
+      </div>
+
+      <div id="trackingResult" style="display:none;margin-top:var(--spacing-lg)">
+        <div class="grid grid-2" style="gap:var(--spacing-md)">
+          <div>
+            <h3>Delivery Progress</h3>
+            <div class="timeline" style="margin-top:var(--spacing-md)">
+              <div class="timeline-item" id="tl-placed"><div class="timeline-item-title">Order Placed</div><div class="timeline-item-sub" id="tl-placed-sub"></div></div>
+              <div class="timeline-item" id="tl-dispatched"><div class="timeline-item-title">Dispatched</div><div class="timeline-item-sub">In transit to you</div></div>
+              <div class="timeline-item" id="tl-at_hub"><div class="timeline-item-title">At Hub</div><div class="timeline-item-sub">Waiting at micro-hub</div></div>
+              <div class="timeline-item" id="tl-out_for_delivery"><div class="timeline-item-title">Out for Delivery</div><div class="timeline-item-sub">Agent on the way</div></div>
+              <div class="timeline-item" id="tl-delivered"><div class,timeline-item-title">Delivered</div><div class="timeline-item-sub">Complete!</div></div>
+            </div>
+          </div>
+          <div>
+            <h3>Order Details</h3>
+            <div style="margin-top:var(--spacing-md)">
+              <div class="info-row"><span class="label">Order ID</span><code class="value mono" id="d-orderId">—</code></div>
+              <div class="info-row"><span class="label">Status</span><span class="value" id="d-status">—</span></div>
+              <div class="info-row"><span class="label">Mode</span><span class="value" id="d-mode">—</span></div>
+              <div class="info-row"><span class="label">Distance</span><span class="value" id="d-distance">—</span></div>
+              <div class="info-row"><span class="label">CO₂</span><span class="value" id="d-carbon">—</span></div>
+              <div class="info-row"><span class="label">Created</span><span class="value" id="d-created">—</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="alerts-wrap" id="alerts"></div>
+
+<script src="/Frontend/config.js"></script>
+<script src="/Frontend/api.js"></script>
+<script>
+let currentUser  = null;
+let placedOrderId = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  initUser();
+  await checkConn();
+});
+
+function initUser() {
+  let id = localStorage.getItem('customerId');
+  if (!id) { id = 'CUST-' + Math.random().toString(36).substr(2,6).toUpperCase(); localStorage.setItem('customerId', id); }
+  currentUser = id;
+  document.getElementById('userGreeting').innerText = id;
+}
+
+function logout() { localStorage.removeItem('customerId'); window.location.href = '/'; }
+
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(name).style.display = 'block';
+  btn.classList.add('active');
+  if (name === 'my-orders') loadMyOrders();
+}
+
+async function placeOrder(e) {
+  e.preventDefault();
+  const btn = document.getElementById('placeBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Validating address…';
+
+  try {
+    const start = document.getElementById('startAddress').value;
+    const end   = document.getElementById('endAddress').value;
+
+    // ✅ ADDED: Validate delivery address before placing order
+    // If geocoding fails, block the order and show a clear error
+    try {
+      const route = await api.getRoute(start, end);
+
+      // Address valid — hide warning, show route details
+      document.getElementById('addressHelp').style.display  = 'none';
+      document.getElementById('endAddress').style.borderColor = '';
+
+      document.getElementById('routeDistance').innerText = route.distance_km.toFixed(2) + ' km';
+      document.getElementById('routeTime').innerText     = Math.round(route.time_min) + ' min';
+      document.getElementById('routeTraffic').innerText  = route.traffic;
+      document.getElementById('routeWeather').innerText  = route.weather || 'unknown';
+      document.getElementById('routeCarbon').innerText   = route.carbon_kg.toFixed(3) + ' kg CO₂';
+      document.getElementById('routeInfo').style.display = 'block';
+
+    } catch(re) {
+      // ✅ Address not found — show warning and STOP the order
+      document.getElementById('addressHelp').style.display    = 'block';
+      document.getElementById('endAddress').style.borderColor = 'var(--danger)';
+      showAlert('Delivery address not found. Please check spelling and try again.', 'error');
+      btn.disabled = false;
+      btn.innerHTML = 'Place Order';
+      return; // ← do not proceed
+    }
+
+    btn.innerHTML = '<span class="spinner"></span> Placing…';
+
+    const body = {
+      area_type:      document.getElementById('areaType').value,
+      connectivity:   document.getElementById('connectivity').value,
+      address_clear:  document.getElementById('addressClear').checked,
+      time:           parseInt(document.getElementById('deliveryTime').value),
+      start_address:  start,
+      end_address:    end,
+      location_type:  document.getElementById('locationType').value,
+      customer_phone: document.getElementById('customerPhone').value
+    };
+
+    const res = await api.placeOrder(body);
+    placedOrderId = res.order_id;
+
+    document.getElementById('totalPrice').innerText = `₹${res.total_cost}`;
+
+    let orders = JSON.parse(localStorage.getItem('customerOrders') || '[]');
+    orders.unshift({ order_id: res.order_id, status: 'placed', mode: res.delivery_mode });
+    localStorage.setItem('customerOrders', JSON.stringify(orders.slice(0, 50)));
+
+    document.getElementById('placedOrderId').innerText       = res.order_id;
+    document.getElementById('deliveryMode').innerHTML        = `<span class="badge badge-info">${res.delivery_mode}</span>`;
+    document.getElementById('failureRisk').innerHTML         = riskBadge(res.failure_risk);
+    document.getElementById('routeInfo').style.display       = 'block';
+    document.getElementById('orderResultCard').style.display = 'block';
+
+    if (res.assigned_hub) {
+      document.getElementById('hubRow').style.display  = 'flex';
+      document.getElementById('assignedHub').innerText = res.assigned_hub.name + ' (' + res.assigned_hub.open_time + ' – ' + res.assigned_hub.close_time + ')';
+    }
+
+    const slotsRes = await api.getAvailableSlots();
+    const btns = slotsRes.slots.map(s =>
+      `<button class="btn btn-ghost btn-sm" onclick="pickSlot('${res.order_id}','${s}',this)">${s}</button>`
+    ).join('');
+    document.getElementById('slotButtons').innerHTML = btns;
+
+    showAlert(`Order placed! ID: <strong>${res.order_id}</strong>`, 'success');
+    document.getElementById('orderForm').reset();
+
+  } catch(err) {
+    showAlert('Error: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Place Order';
+  }
+}
+
+async function pickSlot(orderId, slot, btn) {
+  try {
+    await api.selectSlot(orderId, slot);
+    document.querySelectorAll('#slotButtons .btn').forEach(b => b.classList.remove('btn-primary'));
+    btn.classList.add('btn-primary');
+    btn.classList.remove('btn-ghost');
+    showAlert('Slot confirmed: ' + slot, 'success');
+  } catch(e) { showAlert('Slot error: ' + e.message, 'error'); }
+}
+
+function riskBadge(risk) {
+  if (!risk) return '—';
+  const cls = { low:'badge-success', medium:'badge-warning', high:'badge-danger' }[risk.level] || 'badge-info';
+  return `<span class="badge ${cls}">${risk.level} (${risk.score})</span>`;
+}
+
+async function loadMyOrders() {
+  const el = document.getElementById('myOrdersList');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div> Loading…</div>';
+  try {
+    const res    = await api.getAllOrders();
+    const orders = res.orders || [];
+    if (!orders.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📦</div><p>No orders yet</p></div>'; return; }
+    el.innerHTML = orders.map(o => `
+      <div class="card" style="margin-bottom:var(--spacing-sm)">
+        <div class="flex-between">
+          <div>
+            <code style="font-size:.9rem;color:var(--primary)">${o.order_id}</code>
+            <div style="margin-top:4px">${statusBadge(o.status)} <span style="font-size:.8rem;color:var(--text2);margin-left:6px">${o.mode||''}</span></div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="quickTrack('${o.order_id}')">Track</button>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) { el.innerHTML = `<div class="alert alert-error">Error: ${e.message}</div>`; }
+}
+
+function quickTrack(id) {
+  document.getElementById('trackOrderId').value = id;
+  document.querySelectorAll('.tab-btn')[2].click();
+  trackOrder();
+}
+
+async function trackOrder() {
+  const id = document.getElementById('trackOrderId').value.trim().toUpperCase();
+  if (!id) { showAlert('Please enter an order ID', 'warning'); return; }
+  try {
+    const o = await api.getOrderStatus(id);
+    document.getElementById('trackingResult').style.display = 'block';
+    const steps = ['placed','dispatched','at_hub','out_for_delivery','delivered'];
+    const cur = steps.indexOf(o.status);
+    steps.forEach((s, i) => {
+      const el = document.getElementById('tl-' + s);
+      if (!el) return;
+      el.classList.remove('active','completed');
+      if (i < cur) el.classList.add('completed');
+      else if (i === cur) el.classList.add('active');
+    });
+    document.getElementById('d-orderId').innerText  = o.order_id;
+    document.getElementById('d-status').innerHTML   = statusBadge(o.status);
+    document.getElementById('d-mode').innerText     = o.mode || '—';
+    document.getElementById('d-distance').innerText = o.distance_km ? o.distance_km.toFixed(2) + ' km' : '—';
+    document.getElementById('d-carbon').innerText   = o.carbon_kg  ? o.carbon_kg.toFixed(3)  + ' kg' : '—';
+    document.getElementById('d-created').innerText  = o.created_at || '—';
+    if (o.created_at) document.getElementById('tl-placed-sub').innerText = o.created_at;
+  } catch(e) {
+    showAlert('Order not found: ' + e.message, 'error');
+    document.getElementById('trackingResult').style.display = 'none';
+  }
+}
+
+function statusBadge(s) {
+  const map = { placed:'badge-info', dispatched:'badge-info', at_hub:'badge-warning', out_for_delivery:'badge-warning', delivered:'badge-success', failed:'badge-danger' };
+  return `<span class="badge ${map[s]||'badge-info'}">${s.replace(/_/g,' ')}</span>`;
+}
+
+function showAlert(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = 'alert alert-' + type;
+  el.innerHTML = msg;
+  document.getElementById('alerts').appendChild(el);
+  setTimeout(() => el.remove(), 5000);
+}
+
+async function checkConn() {
+  try { await api.healthCheck(); }
+  catch(e) { showAlert('Cannot connect to backend. Start your Flask server first.', 'error'); }
+}
+</script>
+</body>
+</html>

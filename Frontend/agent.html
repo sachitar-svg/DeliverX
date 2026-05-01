@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeliverX — Agent</title>
+  <link rel="stylesheet" href="/Frontend/styles.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-content">
+    <div class="navbar-brand"><span class="dot"></span> 🚚 DeliverX Agent</div>
+    <div class="navbar-menu">
+      <span id="agentStatusBar" style="font-size:.85rem;color:var(--text2)">Checking…</span>
+      <button class="btn btn-secondary btn-sm" onclick="logout()">🚪 Sign out</button>
+    </div>
+  </nav>
+
+<div class="container">
+  <!-- Stats Grid -->
+  <div class="grid grid-3" style="margin-bottom:var(--spacing-xl)">
+    <div class="stat-card">
+      <div class="stat-icon">📦</div>
+      <div class="stat-value" id="statsActive">0</div>
+      <div class="stat-label">Active Orders</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">✅</div>
+      <div class="stat-value" id="statsDelivered">0</div>
+      <div class="stat-label">Delivered Today</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📍</div>
+      <div class="stat-value" id="gpsStatus" style="font-size:1rem;padding-top:8px">—</div>
+      <div class="stat-label">GPS Status</div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('active-orders',this)">📋 Active Orders</button>
+    <button class="tab-btn" onclick="showTab('confirm-delivery',this)">🎯 Confirm Delivery</button>
+    <button class="tab-btn" onclick="showTab('completed',this)">📜 Completed</button>
+    <!-- NEW TAB -->
+    <button class="tab-btn" onclick="showTab('my-stats',this)">🌿 My Stats</button>
+  </div>
+
+  <!-- TAB 1: Active Orders -->
+  <div id="active-orders" class="tab-content">
+    <div class="card">
+      <div class="card-header">
+        <h2>📦 Orders Assigned to Me</h2>
+        <button class="btn btn-secondary btn-sm" onclick="loadActiveOrders()">🔄 Refresh</button>
+      </div>
+      <div id="activeOrdersList">
+        <div class="loading"><div class="spinner"></div> Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: Confirm Delivery -->
+  <div id="confirm-delivery" class="tab-content" style="display:none">
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-header"><h2>🎯 Confirm Delivery</h2></div>
+
+        <div class="form-group">
+          <label>📝 Order ID *</label>
+          <input type="text" id="activeOrderId" placeholder="e.g. A3F9B21C" style="font-family:var(--font-mono);text-transform:uppercase">
+        </div>
+
+        <div class="form-group">
+          <label>🚚 Delivery type *</label>
+          <select id="deliveryType" onchange="toggleHubFields()">
+            <option value="">Select</option>
+            <option value="direct">🏠 Direct to customer</option>
+            <option value="hub">📦 Drop at micro-hub</option>
+          </select>
+        </div>
+
+        <div id="hubFields" style="display:none">
+          <div class="form-group">
+            <label>📱 Customer phone (for OTP-2 SMS) *</label>
+            <input type="tel" id="customerPhone" placeholder="10-digit number">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>🔑 Step 1: Generate OTP</label>
+          <button class="btn btn-primary btn-block" onclick="generateOTP()" type="button">🔑 Generate OTP</button>
+        </div>
+
+        <div id="otpDisplayBox" style="display:none; background:var(--bg3); border:2px solid var(--primary); border-radius:var(--radius-lg); padding:var(--spacing-lg); margin-bottom:var(--spacing-lg); text-align:center;">
+          <p style="margin:0; color:var(--text2); font-size:.85rem; text-transform:uppercase; letter-spacing:1px">🔐 Your Delivery OTP</p>
+          <p id="otpDisplayValue" style="font-size:2.5rem; font-weight:800; color:var(--primary); font-family:var(--font-mono); letter-spacing:.3em; margin:10px 0">----</p>
+          <p id="otpDisplayHint" style="margin:0; color:var(--text2); font-size:.8rem">Show this to customer OR ask them what they received via SMS</p>
+        </div>
+
+        <div class="form-group">
+          <label>🔐 Step 2: Verification</label>
+          <input type="text" id="deliveryOtp" placeholder="Enter OTP" maxlength="4" style="font-family:var(--font-mono);letter-spacing:.2em;font-size:1.2rem; text-align:center;">
+          <div id="otpStatus" class="form-help" style="margin-top:6px">Waiting for OTP…</div>
+        </div>
+
+        <div id="gpsFields">
+          <div class="form-group">
+            <label>📍 GPS Location <span id="gpsRequired" style="color:var(--danger)">*</span></label>
+            <div style="display:flex;gap:var(--spacing-sm);margin-bottom:6px">
+              <input type="number" id="latitude" placeholder="Latitude" step="any" style="flex:1">
+              <input type="number" id="longitude" placeholder="Longitude" step="any" style="flex:1">
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="getLocation()" type="button">📍 Get My Location</button>
+            <div id="locationStatus" class="form-help" style="margin-top:6px">No location yet</div>
+          </div>
+        </div>
+
+        <button class="btn btn-success btn-block" onclick="handleDelivery(event)" id="confirmBtn">
+          ✅ Verify & Confirm Delivery
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>📖 How it works</h2></div>
+        <div id="directInstructions">
+          <div style="background:var(--bg3); padding:var(--spacing-md); border-radius:var(--radius-md); margin-bottom:var(--spacing-md)">
+            <h3 style="margin-top:0; color:var(--primary)">🏠 Direct Delivery</h3>
+            <ol style="padding-left:var(--spacing-lg);line-height:2;color:var(--text2);font-size:.9rem">
+              <li>Select order and set type to <strong>Direct</strong></li>
+              <li>Click <strong>Generate OTP</strong> — OTP appears on your screen</li>
+              <li>OTP is also sent to customer via SMS 📱</li>
+              <li>Ask customer: <strong>"What OTP did you receive?"</strong></li>
+              <li>Enter the OTP they tell you</li>
+              <li>Capture GPS and click <strong>Verify & Confirm Delivery</strong></li>
+            </ol>
+          </div>
+        </div>
+        <div id="hubInstructions" style="display:none">
+          <div style="background:var(--bg3); padding:var(--spacing-md); border-radius:var(--radius-md); margin-bottom:var(--spacing-md)">
+            <h3 style="margin-top:0; color:var(--primary)">📦 Hub Delivery</h3>
+            <ol style="padding-left:var(--spacing-lg);line-height:2;color:var(--text2);font-size:.9rem">
+              <li>Select order and set type to <strong>Hub</strong></li>
+              <li>Click <strong>Generate OTP</strong> to get OTP-1</li>
+              <li>Travel to micro-hub with the parcel 🚚</li>
+              <li>Show OTP-1 to the hub manager</li>
+              <li>Hub manager verifies and sends OTP-2 to customer</li>
+              <li>Click <strong>Verify & Confirm Delivery</strong> to complete handoff</li>
+            </ol>
+          </div>
+        </div>
+        
+        <div class="card" style="margin-top:var(--spacing-md)">
+          <div class="card-header"><h2>🕐 Last action</h2></div>
+          <div id="lastAction" style="color:var(--text2);font-size:.9rem">No recent actions</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: Completed -->
+  <div id="completed" class="tab-content" style="display:none">
+    <div class="card">
+      <div class="card-header">
+        <h2>📜 Completed Deliveries</h2>
+        <button class="btn btn-secondary btn-sm" onclick="loadCompleted()">🔄 Refresh</button>
+      </div>
+      <div id="completedList">
+        <div class="loading"><div class="spinner"></div> Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: ECO STATS -->
+  <div id="my-stats" class="tab-content" style="display:none">
+    <div class="card">
+      <div class="card-header">
+        <h2>🌿 Environmental Impact</h2>
+        <button class="btn btn-secondary btn-sm" onclick="loadEcoStats()">🔄 Refresh</button>
+      </div>
+      <div class="grid grid-3" style="margin-top:var(--spacing-md)">
+        <div class="stat-card" style="border-bottom: 4px solid var(--danger)">
+          <div class="stat-icon">☁️</div>
+          <div class="stat-value" id="statCarbon">0</div>
+          <div class="stat-label">Total CO₂ Emitted (kg)</div>
+        </div>
+        <div class="stat-card" style="border-bottom: 4px solid var(--primary)">
+          <div class="stat-icon">📉</div>
+          <div class="stat-value" id="statSavings">0</div>
+          <div class="stat-label">CO₂ Saved vs Direct (kg)</div>
+        </div>
+        <div class="stat-card" style="border-bottom: 4px solid var(--success)">
+          <div class="stat-icon">🌳</div>
+          <div class="stat-value" id="statTrees">0</div>
+          <div class="stat-label">Equivalent Trees Planted</div>
+        </div>
+      </div>
+      <div style="margin-top:var(--spacing-xl); text-align:center; padding:var(--spacing-md); background:var(--bg3); border-radius:var(--radius-lg); color:var(--text2); font-size:0.9rem">
+        By using <strong style="color:var(--success)">Micro-Hubs</strong>, you are significantly reducing road congestion and lowering the carbon footprint of the last mile.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="alerts-wrap" id="alerts"></div>
+
+<script src="/Frontend/config.js"></script>
+<script src="/Frontend/api.js"></script>
+
+<script>
+let generatedOTP = null;
+
+function initAgent() {
+  let id = localStorage.getItem('agentId') || 'AGT-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+  localStorage.setItem('agentId', id);
+  document.getElementById('agentStatusBar').innerText = `👤 Agent: ${id}`;
+}
+
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(name).style.display = 'block';
+  btn.classList.add('active');
+  if (name === 'active-orders') loadActiveOrders();
+  if (name === 'completed') loadCompleted();
+  if (name === 'my-stats') loadEcoStats();
+}
+
+function toggleHubFields() {
+  const type = document.getElementById('deliveryType').value;
+  const isHub = type === 'hub';
+  document.getElementById('hubFields').style.display = isHub ? 'block' : 'none';
+  document.getElementById('directInstructions').style.display = isHub ? 'none' : 'block';
+  document.getElementById('hubInstructions').style.display = isHub ? 'block' : 'none';
+  document.getElementById('gpsRequired').style.display = isHub ? 'none' : 'inline';
+  resetOTPState();
+}
+
+function resetOTPState() {
+  generatedOTP = null;
+  document.getElementById('otpDisplayBox').style.display = 'none';
+  document.getElementById('deliveryOtp').value = '';
+  document.getElementById('otpStatus').innerText = 'Waiting for OTP…';
+  document.getElementById('confirmBtn').disabled = false;
+}
+
+async function generateOTP() {
+  const orderId = document.getElementById('activeOrderId').value.trim();
+  const type = document.getElementById('deliveryType').value;
+
+  if (!orderId) { showAlert('⚠️ Enter an Order ID first', 'warning'); return; }
+  if (!type) { showAlert('⚠️ Select a delivery type first', 'warning'); return; }
+
+  try {
+    let res;
+    if (type === 'hub') {
+      res = await api.generateHubAgentOTP(orderId);
+      generatedOTP = res.otp;
+      document.getElementById('otpDisplayBox').style.display = 'block';
+      document.getElementById('otpDisplayValue').innerText = res.otp;
+      document.getElementById('otpDisplayHint').innerText = '📦 Show this OTP to the Hub Manager';
+      document.getElementById('otpStatus').innerHTML = `<strong style="color:var(--success)">✅ OTP-1 Generated</strong>`;
+      document.getElementById('deliveryOtp').value = res.otp;
+    } else {
+      res = await api.generateOTP(orderId, 'agent');
+      generatedOTP = res.otp;
+      document.getElementById('otpDisplayBox').style.display = 'block';
+      document.getElementById('otpDisplayValue').innerText = res.otp;
+      document.getElementById('otpDisplayHint').innerText = '📱 Show this to customer OR ask them what they received via SMS';
+      document.getElementById('otpStatus').innerHTML = `<strong style="color:var(--success)">✅ OTP Generated!</strong>`;
+      document.getElementById('deliveryOtp').value = '';
+      showAlert(`🔑 OTP Generated: ${res.otp} — Also sent to customer via SMS`, 'success');
+    }
+  } catch (e) {
+    showAlert('❌ Error: ' + e.message, 'error');
+  }
+}
+
+async function handleDelivery(e) {
+  e.preventDefault();
+  const orderId = document.getElementById('activeOrderId').value.trim();
+  const otp = document.getElementById('deliveryOtp').value.trim();
+  const type = document.getElementById('deliveryType').value;
+  const lat = parseFloat(document.getElementById('latitude').value);
+  const lng = parseFloat(document.getElementById('longitude').value);
+  const btn = document.getElementById('confirmBtn');
+
+  if (!orderId || !otp) { showAlert('⚠️ Order ID and OTP are required', 'warning'); return; }
+  if (type === 'direct' && (!lat || !lng)) {
+    showAlert('⚠️ GPS location is required for direct delivery', 'warning');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Processing...';
+
+  try {
+    if (type === 'direct') {
+      const verify = await api.verifyOTP(orderId, 'agent', otp);
+      if (!verify.success) throw new Error('❌ Invalid OTP.');
+      await api.confirmDelivery(orderId, 'agent', otp, lat, lng);
+      await api.updateOrderStatus(orderId, 'delivered');
+      showAlert('✅ Verified & Delivered!', 'success');
+      setLastAction(`Delivered: ${orderId}`);
+    } else {
+      await api.updateOrderStatus(orderId, 'dispatched');
+      showAlert('✅ Handed over to hub.', 'success');
+      setLastAction(`Hub drop-off: ${orderId}`);
+    }
+    document.getElementById('activeOrderId').value = '';
+    document.getElementById('deliveryOtp').value = '';
+    resetOTPState();
+    await loadActiveOrders();
+    await loadCompleted();
+  } catch (e) {
+    showAlert('❌ Error: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✅ Verify & Confirm Delivery';
+  }
+}
+
+function getLocation() {
+  navigator.geolocation.getCurrentPosition(pos => {
+    document.getElementById('latitude').value = pos.coords.latitude.toFixed(6);
+    document.getElementById('longitude').value = pos.coords.longitude.toFixed(6);
+    document.getElementById('gpsStatus').innerText = '🟢 GPS OK';
+    document.getElementById('locationStatus').innerText = '✅ Location captured';
+  }, () => {
+    showAlert('⚠️ GPS failed — Please enter manually', 'error');
+  });
+}
+
+async function loadActiveOrders() {
+  const el = document.getElementById('activeOrdersList');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div> Loading…</div>';
+  try {
+    const res = await api.getAllOrders('dispatched');
+    const orders = res.orders || [];
+    document.getElementById('statsActive').innerText = orders.length;
+
+    if (orders.length === 0) {
+      el.innerHTML = '<p style="text-align:center; padding:20px; color:var(--text2)">🎉 No active orders assigned.</p>';
+      return;
+    }
+
+    const directOrders = [];
+    const hubGroups = {};
+
+    orders.forEach(o => {
+      if (o.mode === 'micro-hub') {
+        const hubId = o.hub_id || 'Unknown Hub';
+        if (!hubGroups[hubId]) hubGroups[hubId] = [];
+        hubGroups[hubId].push(o);
+      } else {
+        directOrders.push(o);
+      }
+    });
+
+    let html = '';
+    for (const hubId in hubGroups) {
+      const group = hubGroups[hubId];
+      const phoneList = group.map(o => `
+        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:2px;">
+          <span><code>${o.order_id}</code></span>
+          <span style="color:var(--text2)">${o.customer_phone || 'No phone'}</span>
+        </div>`).join('');
+
+      html += `
+        <div class="card" style="margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; padding:15px; border-left: 4px solid var(--accent); background: var(--bg3);">
+          <div style="flex:1">
+            <div style="font-weight:bold; color:var(--primary); font-size:1rem; margin-bottom:8px">📦 Hub Bundle: ${group.length} Parcel(s)</div>
+            <div style="font-size:.8rem; color:var(--text2); margin-bottom:10px"><strong>Hub ID:</strong> ${hubId}</div>
+            <div style="background:white; border-radius:var(--radius-sm); padding:8px; border:1px solid var(--border)">${phoneList}</div>
+          </div>
+          <div style="margin-left:15px">
+            <button class="btn btn-primary btn-sm" onclick="fillHubOrder('${group[0].order_id}')">🎯 Deliver Hub</button>
+          </div>
+        </div>`;
+    }
+
+    directOrders.forEach(o => {
+      html += `
+        <div class="card" style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; padding:15px">
+          <div>
+            <code style="color:var(--primary); font-size:1rem">📦 ${o.order_id}</code>
+            <div style="margin-top:4px">
+              <span class="badge badge-info">${o.mode || 'direct'}</span> 
+              <span style="font-size:.85rem; color:var(--text2); margin-left:8px">📱 ${o.customer_phone || 'No phone'}</span>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="fillOrder('${o.order_id}')">🎯 Deliver</button>
+        </div>`;
+    });
+
+    el.innerHTML = html;
+  } catch (e) { 
+    el.innerHTML = `<div class="alert alert-error">❌ Error loading orders: ${e.message}</div>`; 
+  }
+}
+
+async function loadCompleted() {
+  const el = document.getElementById('completedList');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div> Loading…</div>';
+  try {
+    const res = await api.getAllOrders('delivered');
+    const orders = res.orders || [];
+    document.getElementById('statsDelivered').innerText = orders.length;
+    
+    if (orders.length === 0) {
+      el.innerHTML = '<p style="text-align:center; padding:20px; color:var(--text2)">📜 No completed deliveries yet.</p>';
+      return;
+    }
+
+    el.innerHTML = orders.map(o => `
+      <div class="card" style="margin-bottom:10px; padding:15px">
+        <div style="display:flex; justify-content:space-between; align-items:center">
+          <div><code style="color:var(--success)">✅ ${o.order_id}</code></div>
+          <span class="badge badge-success">Delivered</span>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    el.innerHTML = `<div class="alert alert-error">❌ Error: ${e.message}</div>`;
+  }
+}
+
+async function loadEcoStats() {
+    try {
+        const res = await api.getAgentStats();
+        const stats = res.stats;
+        document.getElementById('statCarbon').innerText = stats.total_carbon;
+        document.getElementById('statSavings').innerText = stats.total_savings;
+        document.getElementById('statTrees').innerText = stats.trees_planted;
+    } catch (e) {
+        showAlert('❌ Error loading eco stats: ' + e.message, 'error');
+    }
+}
+
+function fillHubOrder(id) {
+  fillOrder(id);
+  document.getElementById('deliveryType').value = 'hub';
+  toggleHubFields();
+}
+
+function fillOrder(id) {
+  document.getElementById('activeOrderId').value = id;
+  showTab('confirm-delivery', document.querySelectorAll('.tab-btn')[1]);
+  resetOTPState();
+}
+
+function setLastAction(text) {
+  document.getElementById('lastAction').innerHTML =
+    `<span style="color:var(--success)">✅ ${text}</span><br>
+     <small style="color:var(--text2)">🕐 ${new Date().toLocaleTimeString()}</small>`;
+}
+
+function showAlert(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = 'alert alert-' + type;
+  el.innerHTML = msg;
+  document.getElementById('alerts').appendChild(el);
+  setTimeout(() => el.remove(), 5000);
+}
+
+function logout() { session.clear(); window.location.href = '/'; }
+
+document.addEventListener('DOMContentLoaded', () => {
+  initAgent();
+  loadActiveOrders();
+});
+</script>
+</body>
+</html>
